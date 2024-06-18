@@ -1,7 +1,18 @@
 <template>
   <div class="flex w-screen h-screen text-gray-700">
     <div class="flex flex-col flex-shrink-0 w-64 border-r border-gray-300 bg-gray-100">
-      <!-- Sidebar content -->
+
+      <div class="h-0 overflow-auto flex-grow">
+        <div class="mt-4">
+          <a href="#" class="flex items-center h-8 text-sm pl-8 pr-3"
+          v-for ="note in notes" :key="note.created">
+          <span class="ml-2 leading-none"> {{  new Date(note.created).toLocaleString() }}</span>
+
+          </a>
+
+        </div>
+
+      </div>
     </div>
     <div class="flex flex-col flex-grow">
       <div class="flex flex-col flex-grow overflow-auto">
@@ -27,10 +38,13 @@ export default {
     return {
       editor: null,
       database: null,
+      notes:[],
     }
   },
   async created() {
     this.database = await this.getDatabase();
+    let notes = await this.getNotes();
+    this.notes = notes.reverse();
   },
   mounted() {
     this.editor = new Editor({
@@ -84,11 +98,25 @@ export default {
         };
 
         let now = new Date();
-        let store = transaction.objectStore('notes');
-        store.add({
+        let note = {
           content: this.editor.getHTML(),
           created: now.getTime()
-        });
+        };
+
+        this.notes.unshift(note);
+        let store = transaction.objectStore('notes');
+        store.add(note);
+      });
+    },
+    async getNotes(){
+      return new Promise((resolve,reject)=>{
+        this.database.transaction('notes')
+        .objectStore('notes')
+        .getAll()
+        .onsuccess = e =>{
+          resolve(e.target.result);
+        }
+
       });
     }
   }
